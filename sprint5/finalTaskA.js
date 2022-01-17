@@ -4,14 +4,15 @@ ID успешной посылки 63816403
 
 
  -- ПРИНЦИП РАБОТЫ --
-    В методе heapSort() создается результирующий массив; добавляются все элементы массива, сохраняя свойства кучи;
+    Реализован класс HeapSort(), который объедияется методы, связанные с сортировкой.
+    В методе sort() создается результирующий массив; добавляются все элементы массива, сохраняя свойства кучи;
      извлекаются наиболее приоритенные элементы до тех пор, пока куча не пуста.
-    heapAdd() - вставка элемента в первую свободную ячейку.
-    swiftUp() - функция 'просеивания вверх'. Если дочерний элемент больше родительского, то то они меняются местами.
+    private add() - вставка элемента в первую свободную ячейку.
+    private swiftUp() - функция 'просеивания вверх'. Если дочерний элемент больше родительского, то то они меняются местами.
     Выполняется до тех пор, пока куча не станет упорядоченной.
-    heapPopMax() - забирает самый приоритетный элемент из пирамиды. На место извлеченного элемента ставится последний
+    private popMax() - забирает самый приоритетный элемент из пирамиды. На место извлеченного элемента ставится последний
     элемент из кучи.
-    shiftDown() - функция "просеивания вниз". Меняет местами вершины до тех пор, пока значение текущего узла меньше,
+    private shiftDown() - функция "просеивания вниз". Меняет местами вершины до тех пор, пока значение текущего узла меньше,
     чем значение его потомков или пока у текущего узла присутсвуют.
     Для определения приоритеного элемента используется сортировка lessPerson(), которая взята из предыдщего финального задания.
 
@@ -25,10 +26,7 @@ ID успешной посылки 63816403
 Таким образом, временная сложность составляет О(n log n).
 
  -- ПРОСТРАНСТВЕННАЯ СЛОЖНОСТЬ --
-Создание бинарной кучи - О(1), так как выделяется память под массив из n элементов.
-Вставка n элементов подряд в бинарную кучу O(log n)+O(log n)+...+O(log n) = O(n log n).
-Извлечение n элементов O(n log n).
-Таким образом, сложность пирамидальной сортировки составляет T = O(1)+O(n log n)+O(n log n) = O(n log n)
+Создание бинарной кучи - О(n), так как выделяется память под массив из n элементов.
  */
 
 const readline = require('readline');
@@ -54,101 +52,108 @@ rl.on('close', () => {
 function getSortedNames(elements) {
     const personsCount = +elements[0];
     const persons = elements.splice(1, personsCount).map(item => new Persons(...item.split(' ')));
-    const result = heapSort(persons);
+    const heapSort = new HeapSort(persons);
 
-    return result.map(person => person.name).join('\n');
-}
-
-function heapSort(arr) {
-    const heap = [-1];
-    let sortedArray = [];
-    let index = 0;
-
-    arr.forEach(item => {
-        heapAdd(heap, item);
-    });
-
-    while(heap.length > 1) {
-        sortedArray[index] = heapPopMax(heap);
-        index++;
-    }
-
-    return sortedArray;
-}
-
-
-function heapAdd(heap, key) {
-    const newIndex = heap.length;
-
-    heap.push(key);
-    siftUp(heap, newIndex);
-}
-
-function heapPopMax(heap) {
-    const result = heap[1];
-    heap[1] = heap[heap.length - 1];
-
-    heap.pop();
-    shiftDown(heap, 1);
-
-    return result;
-}
-
-function siftUp(heap, idx) {
-    if (idx === 1) {
-        return idx;
-    }
-
-    const parentIndex = Math.floor(idx / 2);
-
-    if(lessPerson(heap[parentIndex], heap[idx])) {
-        [heap[parentIndex], heap[idx]] = [heap[idx], heap[parentIndex]];
-        return siftUp(heap, parentIndex);
-    }
-    return idx;
-}
-
-function shiftDown(heap, idx) {
-    const left = 2 * idx;
-    const right = left + 1;
-    const heapSize = heap.length - 1;
-
-    if (heapSize < left) {
-        return idx;
-    }
-
-    let indexLargest;
-
-    if (right <= heapSize && lessPerson(heap[left], heap[right])) {
-        indexLargest = right;
-    } else {
-        indexLargest = left;
-    }
-
-    if (lessPerson(heap[idx], heap[indexLargest])) {
-        [heap[idx], heap[indexLargest]] = [heap[indexLargest], heap[idx]];
-        return shiftDown(heap, indexLargest);
-    }
-
-    return idx;
+    return heapSort.sort().map(person => person.name).join('\n');
 }
 
 class Persons {
-    constructor(name = '', solved = null, errors = null) {
+    constructor(name = '', solved = 0, errors = 0) {
         this.name = name;
         this.solved = +solved;
         this.errors = +errors;
     }
+
+    lessPerson(first, second) {
+            if (first.solved === second.solved) {
+                if (first.errors === second.errors) {
+                    return first.name > second.name;
+                }
+
+                return first.errors > second.errors;
+            }
+            return first.solved < second.solved;
+    }
 }
 
-function lessPerson(first, second) {
-    if (first.solved === second.solved) {
-        if (first.errors === second.errors) {
-            return first.name > second.name;
+class HeapSort {
+    persons = new Persons();
+    heap = [-1];
+
+    constructor(data) {
+        this.data = data;
+    }
+
+    sort() {
+        let sortedArray = [];
+        let index = 0;
+
+        this.data.forEach(item => {
+            this._add(item);
+        });
+
+        while(this.heap.length > 1) {
+            sortedArray[index] = this._popMax();
+            index++;
         }
 
-        return first.errors > second.errors;
+        return sortedArray;
     }
-    return first.solved < second.solved
+
+    _add(key) {
+        const newIndex = this.heap.length;
+
+        this.heap.push(key);
+        this._siftUp(newIndex);
+    }
+
+    _popMax() {
+        const result = this.heap[1];
+        this.heap[1] = this.heap[this.heap.length - 1];
+
+        this.heap.pop();
+        this._shiftDown(1);
+
+        return result;
+    }
+
+    _siftUp(idx) {
+        if (idx === 1) {
+            return idx;
+        }
+
+        const parentIndex = Math.floor(idx / 2);
+
+        if(this.persons.lessPerson(this.heap[parentIndex], this.heap[idx])) {
+            [this.heap[parentIndex], this.heap[idx]] = [this.heap[idx], this.heap[parentIndex]];
+            return this._siftUp(parentIndex);
+        }
+        return idx;
+    }
+
+    _shiftDown(idx) {
+        const left = 2 * idx;
+        const right = left + 1;
+        const heapSize = this.heap.length - 1;
+
+        if (heapSize < left) {
+            return idx;
+        }
+
+        let indexLargest;
+
+        if (right <= heapSize && this.persons.lessPerson(this.heap[left], this.heap[right])) {
+            indexLargest = right;
+        } else {
+            indexLargest = left;
+        }
+
+        if (this.persons.lessPerson(this.heap[idx], this.heap[indexLargest])) {
+            [this.heap[idx], this.heap[indexLargest]] = [this.heap[indexLargest], this.heap[idx]];
+            return this._shiftDown(indexLargest);
+        }
+
+        return idx;
+    }
 }
 
